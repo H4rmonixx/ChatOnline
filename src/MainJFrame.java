@@ -1,4 +1,8 @@
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
 import javax.swing.JOptionPane;
 
 /*
@@ -93,9 +97,31 @@ public class MainJFrame extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Nieodpowiedni login");
             return;
         }
-        GlobalChatFrame chatFrame = new GlobalChatFrame(login);
-        chatFrame.setVisible(true);
-        this.dispose();
+        try{
+            StringBuffer str = new StringBuffer();
+            int k;  
+            Socket socket = new Socket("localhost", 2011);
+            OutputStream out = socket.getOutputStream();
+            InputStream in = socket.getInputStream();
+            
+            out.write((login+"\n").getBytes());
+            System.out.println("Wyslany login");
+            while((k = in.read()) != -1 && k != '\n') str.append((char)k);
+            if(str.toString().equals("EXISTING")){
+                JOptionPane.showMessageDialog(this, "Taki użytkownik jest już online!");
+                in.close();
+                out.close();
+                socket.close();
+                return;
+            }
+                    
+            GlobalChatFrame chatFrame = new GlobalChatFrame(login, socket, in, out);
+            chatFrame.setVisible(true);
+            this.dispose();
+            
+        } catch(IOException e){
+            JOptionPane.showMessageDialog(this, "Nie udalo sie polaczyc z serwerem!");
+        }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     /**

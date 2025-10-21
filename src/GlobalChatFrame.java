@@ -1,9 +1,12 @@
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import javax.swing.DefaultListModel;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 /*
@@ -20,7 +23,7 @@ public class GlobalChatFrame extends javax.swing.JFrame {
     /**
      * Creates new form GlobalChatFrame
      */
-    public GlobalChatFrame(String login) {
+    public GlobalChatFrame(String login, Socket socketS, InputStream inS, OutputStream outS) {
         initComponents();
         this.login = login;
         jLabel2.setText("Zalogowano jako: " + login);
@@ -28,18 +31,17 @@ public class GlobalChatFrame extends javax.swing.JFrame {
         this.userListModel = new DefaultListModel<>();
         jList1.setModel(this.userListModel);
         
-        try{
-            this.socket = new Socket("localhost", 2011);
-            this.in = socket.getInputStream();
-            this.out = socket.getOutputStream();
-            
-            this.out.write((login+"\n").getBytes());
-            
-        } catch(IOException e){
-            e.printStackTrace();
-        }
+        this.socket = socketS;
+        this.in = inS;
+        this.out = outS;
         
-        
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                closeWindow();
+            }
+        });
+
         Thread loopThread = new Thread(() -> {
             try{
                 
@@ -63,10 +65,15 @@ public class GlobalChatFrame extends javax.swing.JFrame {
                             userListModel.addElement(l);
                         }
                     }
+                    if(header.equals("globalMessage")){
+                        str = new StringBuffer();
+                        while((k = in.read()) != -1 && k != '\n') str.append((char)k);
+                        String msg = str.toString();
+                        SwingUtilities.invokeLater(() -> {
+                            jTextArea1.append(msg+"\n");
+                        });
+                    }
                     
-                    SwingUtilities.invokeLater(() -> {
-                    
-                    });
                 }
                 
             } catch(Exception e){
@@ -96,7 +103,7 @@ public class GlobalChatFrame extends javax.swing.JFrame {
         jButton2 = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         setTitle("Czat globalny");
 
         jList1.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
@@ -119,6 +126,11 @@ public class GlobalChatFrame extends javax.swing.JFrame {
         jScrollPane2.setViewportView(jTextArea1);
 
         jButton2.setText("Wyślij");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
 
         jLabel2.setFont(new java.awt.Font("Segoe UI", 1, 10)); // NOI18N
         jLabel2.setText("Zalogowano jako:");
@@ -172,6 +184,24 @@ public class GlobalChatFrame extends javax.swing.JFrame {
         
     }//GEN-LAST:event_jButton1ActionPerformed
 
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // Sent message
+        String msg = jTextField1.getText().trim();
+        if(msg.length() == 0) return;
+        try{
+            this.out.write("message\n".getBytes());
+            this.out.write(";\n".getBytes());
+            this.out.write((msg+"\n").getBytes());
+            jTextField1.setText("");
+        } catch(IOException e){
+            JOptionPane.showMessageDialog(this, "Nie udalo sie wyslac wiadomosci!");
+        }
+    }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void closeWindow(){
+        this.dispose();
+    }
+    
     private String login;
     private DefaultListModel<String> userListModel;
     Socket socket;
