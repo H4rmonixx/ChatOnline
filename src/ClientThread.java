@@ -4,8 +4,11 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Vector;
 
-interface ServerFunc {
-    void sendMessage(String msg, String target);
+interface ServerSendMessage {
+    void run(String msg, String target, String source);
+}
+interface ServerDeclareDisconnect {
+    void run(String nick);
 }
 
 public class ClientThread extends Thread {
@@ -14,14 +17,16 @@ public class ClientThread extends Thread {
     private OutputStream out;
     private String userLogin;
     private Vector<ClientThread> v;
-    private final ServerFunc server;
+    private final ServerSendMessage servermsg;
+    private final ServerDeclareDisconnect serverdisconnect;
 
-    ClientThread(Socket socket, InputStream in, OutputStream out, String login, ServerFunc server) throws IOException{
+    ClientThread(Socket socket, InputStream in, OutputStream out, String login, ServerSendMessage servermsg, ServerDeclareDisconnect serverdisconnect) throws IOException{
         this.socket = socket;
         this.in = in;
         this.out = out;
         this.userLogin = login;
-        this.server = server;
+        this.servermsg = servermsg;
+        this.serverdisconnect = serverdisconnect;
         start();
     }
 
@@ -48,10 +53,15 @@ public class ClientThread extends Thread {
         return true;
     }
     
-    public boolean sendGlobalMessage(String message){
+    public boolean sendMessage(String message, String target, String source){
         try{
-            this.out.write("globalMessage\n".getBytes());
-            this.out.write((message+"\n").getBytes());
+            if(target.equals(";")){
+                this.out.write("globalMessage\n".getBytes());
+                this.out.write((source + "\n").getBytes());
+                this.out.write((message + "\n").getBytes());
+            } else {
+                
+            }
         } catch(IOException e){
             return false;
         }
@@ -77,9 +87,12 @@ public class ClientThread extends Thread {
                     while((k = this.in.read()) != -1 && k != '\n') str.append((char)k);
                     String msg = str.toString();
                     
-                    this.server.sendMessage(this.userLogin + ": " + msg, target);
+                    this.servermsg.run(msg, target, this.userLogin);
                 }
                 
+                if(header.equals("disconnect")){
+                    this.serverdisconnect.run(this.userLogin);
+                }
                 
             }
             this.in.close();

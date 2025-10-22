@@ -105,7 +105,6 @@ public class MainJFrame extends javax.swing.JFrame {
             InputStream in = socket.getInputStream();
             
             out.write((login+"\n").getBytes());
-            System.out.println("Wyslany login");
             while((k = in.read()) != -1 && k != '\n') str.append((char)k);
             if(str.toString().equals("EXISTING")){
                 JOptionPane.showMessageDialog(this, "Taki użytkownik jest już online!");

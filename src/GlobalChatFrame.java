@@ -68,9 +68,17 @@ public class GlobalChatFrame extends javax.swing.JFrame {
                     if(header.equals("globalMessage")){
                         str = new StringBuffer();
                         while((k = in.read()) != -1 && k != '\n') str.append((char)k);
+                        String rawSource = str.toString();
+                        str = new StringBuffer();
+                        while((k = in.read()) != -1 && k != '\n') str.append((char)k);
                         String msg = str.toString();
+                        
+                        String source;
+                        if(rawSource.equals(this.login)) source = "- " + rawSource;
+                        else source = rawSource;
+                        
                         SwingUtilities.invokeLater(() -> {
-                            jTextArea1.append(msg+"\n");
+                            jTextArea1.append(source + ": " + msg+"\n");
                         });
                     }
                     
@@ -185,7 +193,7 @@ public class GlobalChatFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        // Sent message
+        // Sent global chat message
         String msg = jTextField1.getText().trim();
         if(msg.length() == 0) return;
         try{
@@ -199,6 +207,11 @@ public class GlobalChatFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void closeWindow(){
+        try{
+            this.out.write("disconnect\n".getBytes());
+        } catch(IOException e){
+            JOptionPane.showMessageDialog(this, "Nie udalo sie zakonczyc polaczenia poprawnie!");
+        }
         this.dispose();
     }
     

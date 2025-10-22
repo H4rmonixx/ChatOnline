@@ -9,6 +9,7 @@ import java.util.Vector;
 public class ChatServer {
     
     public static Vector<ClientThread> v = new Vector<>();
+    public static Vector<String> usernames = new Vector<>();
 
     public static void main(String[] args) {
         
@@ -26,9 +27,8 @@ public class ChatServer {
                 str = new StringBuffer();
                 while((k = in.read()) != -1 && k != '\n') str.append((char)k);
                 String newUser = str.toString();
-                System.out.println("Logging in...");
                 
-                if(!isLoginUnique(newUser)){
+                if(usernames.contains(newUser)){
                     System.out.println("Connection refused: Login already connected!");
                     out.write("EXISTING\n".getBytes());
                     in.close();
@@ -38,12 +38,14 @@ public class ChatServer {
                 }
                 
                 out.write("ACCEPT\n".getBytes());
-                
                 System.out.println(newUser + ": Connected");
                 
-                v.addElement(new ClientThread(incoming, in, out, newUser, (msg, target) -> {
-                    if(target.equals(";")) sendGlobalMessage(msg);
-                    else sendDirectMessage(msg, target);
+                usernames.add(newUser);
+                v.addElement(new ClientThread(incoming, in, out, newUser, (msg, target, source) -> {
+                    sendMessage(msg, target, source);
+                }, (nick) -> {
+                    System.out.println(nick + ": Disconnected");
+                    disconnectUser(nick);
                 }));
                 
                 updateUsersList();
@@ -55,53 +57,43 @@ public class ChatServer {
         
     }
     
-    public static void sendGlobalMessage(String msg){
+    public static void disconnectUser(String username){
+        usernames.remove(username);
+        checkConnections();
+        updateUsersList();
+    }
+    
+    public static void sendMessage(String msg, String target, String source){
         Iterator<ClientThread> it = v.iterator();
         while (it.hasNext()) {
             ClientThread th = it.next();
-            if (!th.sendGlobalMessage(msg)) {
+            if (!th.sendMessage(msg, target, source)) {
                 it.remove();
             }
         }
-    }
-    
-    public static void sendDirectMessage(String msg, String target){
-        
-    }
-    
-    public static boolean isLoginUnique(String newUser){
-        String[] logins = getUsersList().split(";");
-        for(String x : logins){
-            if(x.equals(newUser)){
-                return false;
-            }
-        }
-        return true;
     }
     
     public static void updateUsersList(){
-        String list = getUsersList();
         Iterator<ClientThread> it = v.iterator();
         while (it.hasNext()) {
             ClientThread th = it.next();
-            if (!th.sendUserList(list)) {
+            if (!th.sendUserList(String.join(";", usernames))) {
                 it.remove();
             }
         }
     }
     
-    public static String getUsersList(){
-        String userList = "";
+    public static void checkConnections(){
         Iterator<ClientThread> it = v.iterator();
         while (it.hasNext()) {
             ClientThread th = it.next();
-            if(!th.isConnection()){
+            if(!usernames.contains(th.getLogin())){
                 it.remove();
-                continue;
             }
-            userList += th.getLogin() + ";";
+            if (!th.isConnection()) {
+                it.remove();
+            }
         }
-        return userList;
     }
     
 }
