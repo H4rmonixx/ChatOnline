@@ -15,20 +15,11 @@ import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
-
-/**
- *
- * @author Admin
- */
 public class GlobalChatFrame extends javax.swing.JFrame {
 
     public GlobalChatFrame(String login, Socket socketS, InputStream inS, OutputStream outS) {
         initComponents();
-        this.login = login;
+        this.username = login;
         jLabel2.setText("Zalogowano jako: " + login);
         
         this.userListModel = new DefaultListModel<>();
@@ -53,7 +44,7 @@ public class GlobalChatFrame extends javax.swing.JFrame {
             }
         });
 
-        Thread loopThread = new Thread(() -> {
+        Thread readSocket = new Thread(() -> {
             try{
                 
                 while(true){
@@ -85,7 +76,7 @@ public class GlobalChatFrame extends javax.swing.JFrame {
                         String msg = str.toString();
                         
                         String source;
-                        if(rawSource.equals(this.login)) source = "** " + rawSource;
+                        if(rawSource.equals(this.username)) source = "** " + rawSource;
                         else source = rawSource;
                         
                         SwingUtilities.invokeLater(() -> {
@@ -100,10 +91,21 @@ public class GlobalChatFrame extends javax.swing.JFrame {
                         while((k = in.read()) != -1 && k != '\n') str.append((char)k);
                         String msg = str.toString();
                         
+                        boolean dmExist = false;
                         Iterator<DirectChatFrame> it = this.dms.iterator();
                         while (it.hasNext()) {
                             DirectChatFrame dm = it.next();
-                            // Test
+                            if(dm.getTargetLogin().equals(source) || dm.getUsername().equals(source)){
+                                dm.receiveMessage(msg, source);
+                                dmExist = true;
+                                break;
+                            }
+                        }
+                        
+                        if(!dmExist){
+                            DirectChatFrame newdm = createDM(source);
+                            newdm.receiveMessage(msg, source);
+                            this.dms.add(newdm);
                         }
                     }
                     
@@ -114,7 +116,7 @@ public class GlobalChatFrame extends javax.swing.JFrame {
             }
         });
 
-        loopThread.start();
+        readSocket.start();
     }
 
     @SuppressWarnings("unchecked")
@@ -213,21 +215,29 @@ public class GlobalChatFrame extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // Open direct message chat
-        
+        if(jList1.getSelectedIndex() < 0){
+            JOptionPane.showMessageDialog(this, "Nie wybrano zadnego uzytkownika!");
+            return;
+        }
+        this.dms.add(createDM(jList1.getSelectedValue()));
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // Sent global chat message
         String msg = jTextField1.getText().trim();
         if(msg.length() == 0) return;
+        sendMessage(";", msg);
+        jTextField1.setText("");
+    }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void sendMessage(String target, String msg){
         try{
-            this.out.write(("message\n;\n"+msg+"\n").getBytes());
-            jTextField1.setText("");
+            this.out.write(("message\n" + target + "\n" + msg + "\n").getBytes());
         } catch(IOException e){
             JOptionPane.showMessageDialog(this, "Nie udalo sie wyslac wiadomosci!");
         }
-    }//GEN-LAST:event_jButton2ActionPerformed
-
+    }
+    
     private void closeWindow(){
         try{
             this.out.write("disconnect\n".getBytes());
@@ -235,10 +245,25 @@ public class GlobalChatFrame extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Nie udalo sie powiadomic serwera!");
         }
         this.dispose();
+        System.exit(0);
+    }
+    
+    private void destroyDM(DirectChatFrame dm){
+        this.dms.remove(dm);
+    }
+    
+    private DirectChatFrame createDM(String Ntarget){
+        DirectChatFrame newDM = new DirectChatFrame(this.username, Ntarget, (dm)->{
+            destroyDM(dm);
+        }, (target, message) -> {
+            sendMessage(target, message);
+        });
+        newDM.setVisible(true);
+        return newDM;
     }
     
     private final Vector<DirectChatFrame> dms = new Vector<>();
-    private final String login;
+    private final String username;
     private final DefaultListModel<String> userListModel;
     private final Socket socket;
     private final InputStream in;

@@ -12,26 +12,29 @@ interface ServerDeclareDisconnect {
 }
 
 public class ClientThread extends Thread {
+    
     private Socket socket;
     private InputStream in;
     private OutputStream out;
-    private String userLogin;
+    private String username;
     private Vector<ClientThread> v;
     private final ServerSendMessage servermsg;
     private final ServerDeclareDisconnect serverdisconnect;
+    private boolean running;
 
     ClientThread(Socket socket, InputStream in, OutputStream out, String login, ServerSendMessage servermsg, ServerDeclareDisconnect serverdisconnect) throws IOException{
         this.socket = socket;
         this.in = in;
         this.out = out;
-        this.userLogin = login;
+        this.username = login;
         this.servermsg = servermsg;
         this.serverdisconnect = serverdisconnect;
+        this.running = true;
         start();
     }
 
     public String getLogin(){
-        return this.userLogin;
+        return this.username;
     }
     
     public boolean isConnection(){
@@ -56,7 +59,7 @@ public class ClientThread extends Thread {
         try{
             if(target.equals(";")){
                 this.out.write(("globalMessage\n" + source + "\n" + message + "\n").getBytes());
-            } else if(target.equals(this.userLogin)) {
+            } else if(target.equals(this.username) || source.equals(this.username)) {
                 this.out.write(("directMessage\n" + source + "\n" + message + "\n").getBytes());
             }
         } catch(IOException e){
@@ -67,11 +70,10 @@ public class ClientThread extends Thread {
 
     public void run(){
         try{
-            boolean done = false;
             int k;			
             StringBuffer str;
 
-            while(!done){
+            while(this.running){
                 str = new StringBuffer();
                 while((k = this.in.read()) != -1 && k != '\n') str.append((char)k);
                 String header = str.toString();
@@ -84,10 +86,11 @@ public class ClientThread extends Thread {
                     while((k = this.in.read()) != -1 && k != '\n') str.append((char)k);
                     String msg = str.toString();
                     
-                    this.servermsg.run(msg, target, this.userLogin);
+                    this.servermsg.run(msg, target, this.username);
                 }
                 if(header.equals("disconnect")){
-                    this.serverdisconnect.run(this.userLogin);
+                    this.running = false;
+                    this.serverdisconnect.run(this.username);
                 }
                 
             }

@@ -40,7 +40,7 @@ public class MainJFrame extends javax.swing.JFrame {
 
         jTextField1.setFont(new java.awt.Font("Verdana", 0, 12)); // NOI18N
         jTextField1.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        jTextField1.setText("cwel123");
+        jTextField1.setText("harmonixx");
 
         jButton1.setText("Połącz");
         jButton1.addActionListener(new java.awt.event.ActionListener() {

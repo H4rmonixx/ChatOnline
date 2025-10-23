@@ -5,10 +5,9 @@ import java.net.Socket;
 import java.util.Iterator;
 import java.util.Vector;
 
-
 public class ChatServer {
     
-    public final static Vector<ClientThread> v = new Vector<>();
+    public final static Vector<ClientThread> cthreads = new Vector<>();
     public final static Vector<String> usernames = new Vector<>();
 
     public static void main(String[] args) {
@@ -41,7 +40,7 @@ public class ChatServer {
                 System.out.println(newUser + ": Connected");
                 
                 usernames.add(newUser);
-                v.addElement(new ClientThread(incoming, in, out, newUser, (msg, target, source) -> {
+                cthreads.addElement(new ClientThread(incoming, in, out, newUser, (msg, target, source) -> {
                     sendMessage(msg, target, source);
                 }, (nick) -> {
                     System.out.println(nick + ": Disconnected");
@@ -64,7 +63,7 @@ public class ChatServer {
     }
     
     public static void sendMessage(String msg, String target, String source){
-        Iterator<ClientThread> it = v.iterator();
+        Iterator<ClientThread> it = cthreads.iterator();
         while (it.hasNext()) {
             ClientThread th = it.next();
             if (!th.sendMessage(msg, target, source)) {
@@ -74,7 +73,7 @@ public class ChatServer {
     }
     
     public static void updateUsersList(){
-        Iterator<ClientThread> it = v.iterator();
+        Iterator<ClientThread> it = cthreads.iterator();
         while (it.hasNext()) {
             ClientThread th = it.next();
             if (!th.sendUserList(String.join(";", usernames))) {
@@ -84,7 +83,7 @@ public class ChatServer {
     }
     
     public static void checkConnections(){
-        Iterator<ClientThread> it = v.iterator();
+        Iterator<ClientThread> it = cthreads.iterator();
         while (it.hasNext()) {
             ClientThread th = it.next();
             if(!usernames.contains(th.getLogin())){
