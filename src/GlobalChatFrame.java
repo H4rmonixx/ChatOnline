@@ -166,7 +166,7 @@ public class GlobalChatFrame extends javax.swing.JFrame {
             }
         });
 
-        jLabel2.setFont(new java.awt.Font("Segoe UI", 1, 10)); // NOI18N
+        jLabel2.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel2.setText("Zalogowano jako:");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
