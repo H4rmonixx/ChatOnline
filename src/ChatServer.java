@@ -8,8 +8,8 @@ import java.util.Vector;
 
 public class ChatServer {
     
-    public static Vector<ClientThread> v = new Vector<>();
-    public static Vector<String> usernames = new Vector<>();
+    public final static Vector<ClientThread> v = new Vector<>();
+    public final static Vector<String> usernames = new Vector<>();
 
     public static void main(String[] args) {
         

@@ -45,8 +45,7 @@ public class ClientThread extends Thread {
 
     public boolean sendUserList(String list){
         try{
-            this.out.write("usersList\n".getBytes());
-            this.out.write((list+"\n").getBytes());
+            this.out.write(("usersList\n" + list + "\n").getBytes());
         } catch(IOException e){
             return false;
         }
@@ -56,11 +55,9 @@ public class ClientThread extends Thread {
     public boolean sendMessage(String message, String target, String source){
         try{
             if(target.equals(";")){
-                this.out.write("globalMessage\n".getBytes());
-                this.out.write((source + "\n").getBytes());
-                this.out.write((message + "\n").getBytes());
-            } else {
-                
+                this.out.write(("globalMessage\n" + source + "\n" + message + "\n").getBytes());
+            } else if(target.equals(this.userLogin)) {
+                this.out.write(("directMessage\n" + source + "\n" + message + "\n").getBytes());
             }
         } catch(IOException e){
             return false;
@@ -89,7 +86,6 @@ public class ClientThread extends Thread {
                     
                     this.servermsg.run(msg, target, this.userLogin);
                 }
-                
                 if(header.equals("disconnect")){
                     this.serverdisconnect.run(this.userLogin);
                 }
